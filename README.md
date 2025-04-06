@@ -27,11 +27,13 @@ Este servicio es el componente de la Directiva de la cooperativa. Se encarga de:
 HOST=0.0.0.0
 PORT=8080
 DATABASE_URL=...
+```
 
 3. 
 Corre con Docker/Podman:
 ```podman build -t directiva-handler .
-podman run -p 8080:8080 --env-file .env directiva-handler```
+podman run -p 8080:8080 --env-file .env directiva-handler
+```
 #
 Endpoint
 POST /graphql — para enviar consultas GraphQL
