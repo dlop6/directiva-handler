@@ -20,17 +20,18 @@ Este servicio es el componente de la Directiva de la cooperativa. Se encarga de:
    ```bash
    git clone <url>
    cd directiva-handler
-Crea un archivo .env con la configuración:
+   ```
+2. Crea un archivo .env con la configuración:
 
-env
-
+```
 HOST=0.0.0.0
 PORT=8080
 DATABASE_URL=...
+
+3. 
 Corre con Docker/Podman:
-
-
-podman build -t directiva-handler .
-podman run -p 8080:8080 --env-file .env directiva-handler
-# Endpoint
+```podman build -t directiva-handler .
+podman run -p 8080:8080 --env-file .env directiva-handler```
+#
+Endpoint
 POST /graphql — para enviar consultas GraphQL
