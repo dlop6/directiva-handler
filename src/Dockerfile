@@ -3,7 +3,7 @@ FROM rust:1.74 as builder
 
 WORKDIR /app
 
-# Copia de dependencias primero para aprovechar el caché
+
 
 COPY .env /app/.env
 
@@ -18,7 +18,7 @@ COPY . .
 # Compilación del binario en modo release
 RUN cargo build --release
 
-# Etapa 2: imagen final, ligera
+
 FROM debian:buster-slim
 
 # Certificados necesarios para hacer requests HTTPS

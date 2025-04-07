@@ -10,7 +10,6 @@ Este servicio es el componente de la Directiva de la cooperativa. Se encarga de:
 ## Tecnologías
 
 - Rust + Actix Web
-- GraphQL (`async-graphql`)
 - Docker + Podman
 - Variables de entorno con `.env`
 
