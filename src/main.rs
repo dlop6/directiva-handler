@@ -1,21 +1,33 @@
+// En src/main.rs
 use actix_web::{web, App, HttpServer};
-use dotenv::dotenv;
-use std::env;
+use juniper::http::graphiql::graphiql_source;
+use juniper::http::GraphQLRequest;
+use std::sync::Arc;
+use crate::endpoints::graphql_endpoints::{Schema, create_schema};
+
+async fn graphql_handler(
+    schema: web::Data<Arc<Schema>>,
+    data: web::Json<GraphQLRequest>,
+) -> Result<HttpResponse, Error> {
+    let res = data.execute(&schema, &()).await;
+    Ok(HttpResponse::Ok().json(res))
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // cargar  .env
-    dotenv().ok();
+    let schema = Arc::new(create_schema());
 
-    
-    let server_port = env::var("SERVER_PORT").unwrap_or_else(|_| "8080".to_string());
-
-    // crear y lanzar el servidor Actix
-    HttpServer::new(|| {
+    HttpServer::new(move || {
         App::new()
-            .route("/", web::get().to(|| async { "Hola Mundo" }))
+            .app_data(web::Data::new(schema.clone()))
+            .route("/graphql", web::post().to(graphql_handler))
+            .route("/graphiql", web::get().to(|| async {
+                HttpResponse::Ok()
+                    .content_type("text/html; charset=utf-8")
+                    .body(graphiql_source("/graphql", None))
+            }))
     })
-    .bind(format!("0.0.0.0:{}", server_port))?
+    .bind("0.0.0.0:8080")?
     .run()
     .await
 }
