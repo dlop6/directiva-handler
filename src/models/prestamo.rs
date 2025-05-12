@@ -1,6 +1,8 @@
 use juniper::GraphQLObject;
 use serde::{Deserialize, Serialize};
-use chrono::NaiveDate;
+
+use crate::models::{codeudor::Codeudor, prestamo_detalle::PrestamoDetalle, pagare::Pagare};
+
 
 #[derive(Clone, Serialize, Deserialize, GraphQLObject, Debug)]
 pub struct Prestamo {
@@ -10,7 +12,7 @@ pub struct Prestamo {
     pub monto_cancelado: f64,
     pub motivo: String,
     pub tasa_interes: f64,
-    pub fecha_solicitud: NaiveDate,  // Usando chrono para fechas
+    pub fecha_solicitud: String,  // Usando chrono para fechas
     pub plazo_meses: i32,
     pub meses_cancelados: i32,
     pub estado: super::estados::Estados,

@@ -14,6 +14,10 @@ impl DirectivaQuery {
     }
 
     fn obtener_roles_directiva(&self) -> FieldResult<Vec<String>> {
-        Ok(vec!["directiva".to_string()])
+        Ok(vec![
+            "directiva".to_string(),
+            "presidente".to_string(),
+            "tesorero".to_string()
+        ])
     }
 }

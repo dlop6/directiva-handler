@@ -1,6 +1,7 @@
 use juniper::GraphQLEnum;
+use serde::{Deserialize, Serialize};
 
-#[derive(GraphQLEnum, Clone, Debug)]
+#[derive(GraphQLEnum, Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub enum Estados {
     Pendiente,
     Rechazado,
