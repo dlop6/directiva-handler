@@ -47,7 +47,7 @@ impl PrestamoQuery {
     fn obtener_prestamo_por_id(&self, id: i32) -> FieldResult<Prestamo> {
         dummy_data::get_dummy_prestamos()
             .into_iter()
-            .find(|p| p.solicitante_id == id)
+            .find(|p| p.id == id)  // Cambiado de solicitante_id a id
             .ok_or("Préstamo no encontrado".into())
     }
 

@@ -6,6 +6,7 @@ use crate::models::{codeudor::Codeudor, prestamo_detalle::PrestamoDetalle, pagar
 
 #[derive(Clone, Serialize, Deserialize, GraphQLObject, Debug)]
 pub struct Prestamo {
+    pub id: i32,  
     pub solicitante_id: i32,
     pub nombre: String,
     pub monto_total: f64,

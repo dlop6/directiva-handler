@@ -110,6 +110,7 @@ pub fn get_dummy_moras() -> Vec<Mora> {
 pub fn get_dummy_prestamos() -> Vec<Prestamo> {
     vec![
         Prestamo {
+            id: 1,
             solicitante_id: 1,
             nombre: "Préstamo Personal".to_string(),
             monto_total: 10000.0,
@@ -125,6 +126,7 @@ pub fn get_dummy_prestamos() -> Vec<Prestamo> {
             pagare: None,
         },
         Prestamo {
+            id: 2,
             solicitante_id: 2,
             nombre: "Préstamo Vivienda".to_string(),
             monto_total: 15000.0,
@@ -140,6 +142,7 @@ pub fn get_dummy_prestamos() -> Vec<Prestamo> {
             pagare: None,
         },
         Prestamo {
+            id: 3,
             solicitante_id: 1,
             nombre: "Préstamo Completado".to_string(),
             monto_total: 5000.0,
@@ -153,6 +156,7 @@ pub fn get_dummy_prestamos() -> Vec<Prestamo> {
             codeudores: None,
             mensualidad_prestamo: None,
             pagare: None,
-        }
+        },
+
     ]
 }
