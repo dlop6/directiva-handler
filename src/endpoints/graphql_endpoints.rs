@@ -10,30 +10,25 @@ pub struct Query;
 
 #[juniper::graphql_object]
 impl Query {
-    fn directiva(&self) -> DirectivaQuery {
+    async fn directiva(&self) -> DirectivaQuery {
         DirectivaQuery
     }
 
-    fn moras(&self) -> MoraQuery {
+    async fn moras(&self) -> MoraQuery {
         MoraQuery
     }
 
-    fn pagos(&self) -> PagoQuery {
+    async fn pagos(&self) -> PagoQuery {
         PagoQuery
     }
 
-    fn prestamos(&self) -> PrestamoQuery {
+    async fn prestamos(&self) -> PrestamoQuery {
         PrestamoQuery
     }
 }
 
-// Corrige el Schema añadiendo EmptySubscription
 pub type Schema = RootNode<'static, Query, EmptyMutation<()>, EmptySubscription<()>>;
 
 pub fn create_schema() -> Schema {
-    Schema::new(
-        Query {}, 
-        EmptyMutation::new(), 
-        EmptySubscription::new()
-    )
+    Schema::new(Query {}, EmptyMutation::new(), EmptySubscription::new())
 }
