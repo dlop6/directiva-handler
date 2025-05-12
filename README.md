@@ -1,32 +1,108 @@
-# Documentación API GraphQL - Cooperativa Backend
+# DIRECTIVA-API-HANDLER
 
-## Info General
-**URL Base**: `http://localhost:8080/graphql`  
-**Playground**: `http://localhost:8080/graphiql`  
-**Tecnología**: Actix-Web + Juniper (Rust)
 
-## 🔍 Queries Disponibles
+##  Requisitos Técnicos
+- Rust 1.65+
+- Cargo
 
-### 1. Consultas de Directiva
+
+
+## 🌐 Endpoints
+- **GraphQL API**: `http://localhost:8080/graphql`
+- **GraphiQL (Interfaz interactiva)**: `http://localhost:8080/graphiql`
+
+## Documentación de Queries
+
+### 1. Consultas de Usuarios y Directiva
 ```graphql
+# Obtener miembros de directiva
 query {
   directiva {
     obtenerMiembrosDirectiva {
       id
       nombreCompleto
+      totalAporte
       roles {
         nombre
         tasaInteres
       }
-      totalAporte
     }
-    obtenerRolesDirectiva
   }
 }
 ```
 
-### 2. Consultas de Moras
+### 2. Gestión de Préstamos
 ```graphql
+# Todos los préstamos
+query {
+  prestamos {
+    obtenerTodosPrestamos {
+      id
+      nombre
+      estado
+      montoTotal
+      solicitanteId
+    }
+  }
+}
+
+# Préstamos vigentes
+query {
+  prestamos {
+    obtenerPrestamosVigentes {
+      id
+      nombre
+      plazoMeses
+    }
+  }
+}
+
+# Detalles completos de un préstamo
+query {
+  prestamos {
+    obtenerPrestamoPorId(id: 1) {
+      nombre
+      estado
+      detalle: obtenerDetallePrestamo {
+        numeroCuota
+        montoCuota
+      }
+      codeudores: obtenerCodeudores {
+        nombre
+        telefono
+      }
+    }
+  }
+}
+```
+
+### 3. Consultas de Pagos
+```graphql
+# Pagos realizados por usuario
+query {
+  pagos {
+    obtenerPagosPagados(usuarioId: 1) {
+      montoCuota
+      fechaVencimiento
+      montoPagado
+    }
+  }
+}
+
+# Pagos pendientes
+query {
+  pagos {
+    obtenerPagosPendientes(usuarioId: 1) {
+      montoCuota
+      fechaVencimiento
+    }
+  }
+}
+```
+
+### 4. Gestión de Moras
+```graphql
+# Todas las moras registradas
 query {
   moras {
     obtenerTodasMoras {
@@ -34,16 +110,14 @@ query {
       morasCuota {
         mesCuota
         monto
-        estado
-      }
-      morasPrestamo {
-        nombrePrestamo
-        mesCuota
-        monto
-        estado
       }
     }
-    
+  }
+}
+
+# Moras por usuario específico
+query {
+  moras {
     obtenerMorasPorUsuario(usuarioId: 1) {
       nombreUsuario
       morasCuota {
@@ -55,96 +129,49 @@ query {
 }
 ```
 
-### 3. Consultas de Pagos
-```graphql
-query {
-  pagos {
-    obtenerPagosPendientes(usuarioId: 1) {
-      montoCuota
-      fechaVencimiento
-      montoPagado
-      multa
-    }
-    
-    obtenerPagosPagados(usuarioId: 1) {
-      montoCuota
-      fechaVencimiento
-      montoPagado
-    }
-  }
-}
-```
+##  QUERIES EJEMPLOS
 
-### 4. Consultas de Préstamos
+### Query con Variables
 ```graphql
-query {
+query PrestamosUsuario($userId: Int!, $estado: Estados) {
   prestamos {
-    obtenerPrestamosVigentes(usuarioId: 1) {
+    obtenerPrestamosPorUsuario(usuarioId: $userId, estado: $estado) {
+      id
       nombre
-      montoTotal
-      montoCancelado
       estado
-      tasaInteres
-      plazoMeses
-      fechaSolicitud
     }
   }
 }
 ```
 
-##  Datos Dummy Disponibles
 
-### Usuarios de prueba
-| ID | Nombre          | Roles               | Aporte |
-|----|-----------------|---------------------|--------|
-| 1  | Ana Pérez       | directiva           | 1500   |
-| 2  | Luis García     | socio               | 800    |
-| 3  | Carlos Martínez | socio               | 1200   |
-| 4  | María Rodríguez | directiva, tesorero | 2000   |
-
-### Moras disponibles
-- Usuario "Ejemplo Usuario":
-  - 2 moras de cuota (50 y 75)
-  - 1 mora de préstamo (100)
-- Usuario "Carlos Martínez":
-  - 1 mora de cuota (60)
-
-### Cuotas disponibles
-- 2 pendientes (0 pagado)
-- 1 pagada (100 pagado)
-- 1 parcial (75/150 pagado)
-
-## Cómo Probar
-
-1. Inicie el servidor:
-```bash
-cargo run
-```
-
-2. Abra el playground GraphiQL:
-```
-http://localhost:8080/graphiql
-```
-
-3. Ejecute queries de prueba como:
+### Query Combinado
 ```graphql
-query PruebaCompleta {
-  usuarios: directiva {
+query ResumenFinanciero($userId: Int!) {
+  usuario: directiva {
     obtenerMiembrosDirectiva {
       nombreCompleto
     }
   }
+  
+  prestamos {
+    obtenerPrestamosPorUsuario(usuarioId: $userId) {
+      nombre
+      estado
+    }
+  }
+  
   moras {
-    obtenerTodasMoras {
+    obtenerMorasPorUsuario(usuarioId: $userId) {
       nombreUsuario
     }
   }
 }
 ```
 
-## Estructura de Datos
+##  Estructura de Datos
 
-### Usuario (`User`)
+### Tipos Principales
 ```graphql
 type User {
   id: Int!
@@ -152,24 +179,19 @@ type User {
   roles: [Rol!]!
   totalAporte: Float!
 }
-```
 
-### Mora (`Mora`)
-```graphql
-type Mora {
-  nombreUsuario: String!
-  morasCuota: [CuotaMora!]!
-  morasPrestamo: [PrestamoCuotaMora!]!
+type Prestamo {
+  id: Int!
+  nombre: String!
+  estado: Estados!
+  montoTotal: Float!
+  # ...otros campos
+}
+
+type Cuota {
+  montoCuota: Float!
+  fechaVencimiento: String!
+  montoPagado: Float!
 }
 ```
-
-
-
-
-
-
-##  Notas para Frontend
-1. Todos los campos son sensibles a mayúsculas/minúsculas
-2. Los enums disponibles son: `Pendiente`, `Vigente`, `Pagado`, `Rechazado`
-3. IDs de usuarios dummy válidos: 1, 2, 3, 4
 
