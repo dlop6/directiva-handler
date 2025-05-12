@@ -23,7 +23,7 @@ async fn main() -> std::io::Result<()> {
     let schema = Arc::new(create_schema());
     let port = 8080;
 
-    println!("🚀 Servidor GraphQL iniciado en http://localhost:{}", port);
+    println!("Servidor GraphQL iniciado en http://localhost:{}", port);
 
     HttpServer::new(move || {
         let cors = Cors::default()
