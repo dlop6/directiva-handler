@@ -1,4 +1,4 @@
-use juniper::{GraphQLObject, GraphQLInputObject};
+use juniper::GraphQLObject;
 use serde::{Serialize, Deserialize};
 
 #[derive(Clone, Serialize, Deserialize, GraphQLObject, Debug)]

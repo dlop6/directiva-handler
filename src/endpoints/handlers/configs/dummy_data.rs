@@ -1,5 +1,6 @@
 use crate::models::usuarios::{User, Rol};
 use crate::models::moras::{Mora, CuotaMora, PrestamoCuotaMora};
+use crate::models::cuota::Cuota;
 
 pub fn get_dummy_users() -> Vec<User> {
     vec![

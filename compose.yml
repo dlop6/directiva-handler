@@ -1,18 +1,13 @@
-version: "3.9"
-
 services:
   directiva-handler:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: directiva-handler
+    build: .
     ports:
       - "8080:8080"
     env_file:
       - .env
     depends_on:
       postgres:
-        condition: service_healthy  # hasta q tengamos postgres
+        condition: service_healthy
       redis:
         condition: service_started
     networks:
@@ -20,7 +15,6 @@ services:
 
   postgres:
     image: postgres:16
-    container_name: postgres
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -29,7 +23,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-    healthcheck:  
+    healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
@@ -39,7 +33,6 @@ services:
 
   redis:
     image: redis:7
-    container_name: redis
     ports:
       - "6379:6379"
     volumes:

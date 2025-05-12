@@ -1,16 +1,17 @@
-// En src/main.rs
-use actix_web::{web, App, HttpServer};
+use actix_web::{web, App, HttpResponse, HttpServer};
 use juniper::http::graphiql::graphiql_source;
-use juniper::http::GraphQLRequest;
 use std::sync::Arc;
-use crate::endpoints::graphql_endpoints::{Schema, create_schema};
+use endpoints::graphql_endpoints::{Schema, create_schema};
+
+mod endpoints;
+mod models;
 
 async fn graphql_handler(
     schema: web::Data<Arc<Schema>>,
-    data: web::Json<GraphQLRequest>,
-) -> Result<HttpResponse, Error> {
-    let res = data.execute(&schema, &()).await;
-    Ok(HttpResponse::Ok().json(res))
+    data: web::Json<juniper::http::GraphQLRequest>,
+) -> HttpResponse {
+    let response = data.execute(&schema, &()).await; // Añade .await aquí
+    HttpResponse::Ok().json(response)
 }
 
 #[actix_web::main]
