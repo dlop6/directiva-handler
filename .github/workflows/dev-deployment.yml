@@ -1,0 +1,32 @@
+name: dev-directiva-deployment
+
+on:
+  push:
+    branches:
+      - dev-deployment
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Clona el repositorio
+      - uses: actions/checkout@v3
+
+      # 2. Prepara la llave SSH
+      - run: mkdir -p ~/.keys
+      - run: touch ~/.keys/CSPI_KEY.pem
+      - run: echo "${{ secrets.CSPI_KEY }}" >> ~/.keys/CSPI_KEY.pem && chmod 400 ~/.keys/CSPI_KEY.pem
+
+      # 3.  Muestra la llave para debug
+      - run: cat ~/.keys/CSPI_KEY.pem
+
+      # 4. Entra por SSH y despliega
+      - name: entering personal vm
+        run: |
+          ssh -i ~/.keys/CSPI_KEY.pem -o StrictHostKeyChecking=no \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
+            cd directiva-handler
+            git pull
+            podman-compose down
+            podman-compose -f directiva-compose.yml up --build -d
+          EOF
