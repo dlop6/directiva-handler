@@ -194,4 +194,4 @@ type Cuota {
   montoPagado: Float!
 }
 ```
-
+### FUNCIONO?
