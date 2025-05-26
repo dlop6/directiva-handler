@@ -26,6 +26,7 @@ jobs:
           ssh -i ~/.keys/CSPI_KEY.pem -o StrictHostKeyChecking=no \
               ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} << 'EOF'
             cd directiva-handler
+            sleep 5
             git pull
             podman-compose down
             podman-compose -f directiva-compose.yml up --build -d
