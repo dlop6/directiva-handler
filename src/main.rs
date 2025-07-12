@@ -34,10 +34,9 @@ async fn main() -> std::io::Result<()> {
 
     // Cargar configuración
     let cfg = Config::init().expect("Falló al cargar la configuración");
-
-    println!("🔗 Conectando a Postgres en: {}", cfg.database_url);
-    println!("🔗 Conectando a Redis en: {}", cfg.redis_url);
-    println!("🚀 Servidor corriendo en: http://{}", cfg.server_addr());
+    println!(" Conectando a Postgres en: {}", cfg.database_url);
+    println!(" Conectando a Redis en: {}", cfg.redis_url);
+    println!(" Servidor corriendo en: http://{}", cfg.server_addr());
 
     // Crear el schema de GraphQL
     let schema = Arc::new(create_schema());
