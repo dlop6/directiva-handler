@@ -1,26 +1,22 @@
 use juniper::FieldResult;
 use crate::models::moras::Mora;
-use crate::endpoints::handlers::configs::dummy_data;
+use crate::endpoints::graphql_context::Context;
+use crate::repos::pg::fetch_moras;
 
 pub struct MoraQuery;
 
-#[juniper::graphql_object]
+#[juniper::graphql_object(Context = Context)]
 impl MoraQuery {
-    fn obtener_moras_por_usuario(&self, usuario_id: i32) -> FieldResult<Mora> {
-        // Buscar en los datos dummy por usuario_id
-        let moras = dummy_data::get_dummy_moras();
+    async fn obtener_moras_por_usuario(&self, ctx: &Context, usuario_id: i32) -> FieldResult<Mora> {
+        let client = ctx.pg_client.get().await?;
+        let moras = fetch_moras(&client).await?;
         moras.into_iter()
-            .find(|m| {
-                let user = dummy_data::get_dummy_users()
-                    .into_iter()
-                    .find(|u| u.id == usuario_id)
-                    .unwrap();
-                m.nombre_usuario == user.nombre_completo
-            })
+            .find(|m| m.usuario_id == usuario_id)
             .ok_or("No se encontraron moras para este usuario".into())
     }
 
-    fn obtener_todas_moras(&self) -> FieldResult<Vec<Mora>> {
-        Ok(dummy_data::get_dummy_moras())
+    async fn obtener_todas_moras(&self, ctx: &Context) -> FieldResult<Vec<Mora>> {
+        let client = ctx.pg_client.get().await?;
+        Ok(fetch_moras(&client).await?)
     }
 }

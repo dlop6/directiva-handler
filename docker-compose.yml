@@ -1,0 +1,68 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: directiva_db
+      POSTGRES_USER: directiva_user
+      POSTGRES_PASSWORD: directiva_pass
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgresql-dev-env/migrations:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U directiva_user -d directiva_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  directiva-handler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgres://directiva_user:directiva_pass@postgres:5432/directiva_db
+      REDIS_URL: redis://redis:6379
+      SERVER_PORT: 8080
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  db-maintenance:
+    build:
+      context: .
+      dockerfile: Dockerfile.maintenance
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - db_backups:/backup
+      - maintenance_logs:/var/log/db-maintenance
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
+  redis_data:
+  db_backups:
+  maintenance_logs:
