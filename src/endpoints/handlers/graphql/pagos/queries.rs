@@ -7,14 +7,14 @@ pub struct PagoQuery;
 
 #[juniper::graphql_object(Context = Context)]
 impl PagoQuery {
-    /// Obtiene todos los pagos de todos los socios - Para supervisión de la directiva
+    /// obtiene todos los pagos de todos los socios - para supervisión de la directiva
     async fn obtener_todos_los_pagos(&self, ctx: &Context) -> FieldResult<Vec<PagoCompleto>> {
         let client = ctx.pg_client.get().await?;
         let pagos = fetch_todos_los_pagos(&client).await?;
         Ok(pagos)
     }
 
-    /// Obtiene todos los pagos pendientes de todos los socios
+    /// todos los pagos pendientes de todos los socios
     async fn obtener_todos_los_pagos_pendientes(&self, ctx: &Context) -> FieldResult<Vec<PagoCompleto>> {
         let client = ctx.pg_client.get().await?;
         let pagos = fetch_todos_los_pagos(&client).await?;
@@ -24,7 +24,7 @@ impl PagoQuery {
             .collect())
     }
 
-    /// Obtiene todos los pagos completados de todos los socios
+    /// pagos completados de todos los socios
     async fn obtener_todos_los_pagos_completados(&self, ctx: &Context) -> FieldResult<Vec<PagoCompleto>> {
         let client = ctx.pg_client.get().await?;
         let pagos = fetch_todos_los_pagos(&client).await?;
@@ -34,7 +34,7 @@ impl PagoQuery {
             .collect())
     }
 
-    /// Obtiene pagos por socio específico - Para revisión individual
+    /// pagos por socio específico - para revisión individual
     async fn obtener_pagos_por_socio(&self, ctx: &Context, usuario_id: i32) -> FieldResult<Vec<PagoCompleto>> {
         let client = ctx.pg_client.get().await?;
         let pagos = fetch_todos_los_pagos(&client).await?;
@@ -44,7 +44,7 @@ impl PagoQuery {
             .collect())
     }
 
-    // Mantener las funciones originales para compatibilidad
+    // mantener las funciones originales para compatibilidad
     async fn obtener_pagos_pendientes(&self, ctx: &Context, usuario_id: i32) -> FieldResult<Vec<Cuota>> {
         let client = ctx.pg_client.get().await?;
         let cuotas = fetch_cuotas(&client).await?;

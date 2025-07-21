@@ -1,4 +1,4 @@
-use juniper::FieldResult;
+use juniper::Field        // filtramos solo "directiva" si hacía faltaesult;
 use crate::repos::pg::fetch_usuarios;
 use crate::models::usuarios::User;
 use crate::endpoints::graphql_context::Context;
@@ -12,9 +12,9 @@ impl DirectivaQuery {
         &self,
         ctx: &Context,
     ) -> FieldResult<Vec<User>> {
-        // 1) Sacamos un cliente del pool
+        // sacamos un cliente del pool
         let client = ctx.pg_client.get().await?;
-        // 2) Llamamos a tu función de repositorio
+        // llamamos a tu función de repositorio
         let usuarios = fetch_usuarios(&client).await?;
         // 3) (Opcional) Filtramos solo “directiva” si hacía falta
         Ok(usuarios

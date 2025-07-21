@@ -22,13 +22,13 @@ use std::str::FromStr;
 struct UsuarioRow {
     id_usuario: i32,
     nombre_completo: String,
-    // Asume que `total_aporte` está en la tabla; si no, quítalo o ajusta:
+    // asume que `total_aporte` está en la tabla; si no, quítalo o ajusta:
     total_aporte: f64,
 }
 
 /// Obtiene todos los usuarios desde la base de datos.
 pub async fn fetch_usuarios(client: &Client) -> Result<Vec<User>, Error> {
-    // Prepara la consulta
+    // prepara la consulta
     let stmt = client
         .prepare(
             "SELECT u.id_usuario, u.nombre_completo, u.total_aporte, 
@@ -39,9 +39,9 @@ pub async fn fetch_usuarios(client: &Client) -> Result<Vec<User>, Error> {
              GROUP BY u.id_usuario, u.nombre_completo, u.total_aporte"
         )
         .await?;
-    // Ejecuta
+    // ejecuta
     let rows = client.query(&stmt, &[]).await?;
-    // Mapea a tu modelo de dominio
+    // mapea a tu modelo de dominio
     let users = rows
         .iter()
         .map(|row| {
@@ -54,7 +54,7 @@ pub async fn fetch_usuarios(client: &Client) -> Result<Vec<User>, Error> {
                     .into_iter()
                     .map(|nombre| Rol { 
                         nombre, 
-                        tasa_interes: 0.0  // Por ahora hardcodeado, luego se puede obtener de la BD
+                        tasa_interes: 0.0  // por ahora hardcodeado, luego se puede obtener de la bd
                     })
                     .collect(),
             }
@@ -205,7 +205,7 @@ pub async fn fetch_cuotas(client: &Client) -> Result<Vec<Cuota>, Error> {
     Ok(cuotas)
 }
 
-/// Obtiene todos los pagos de todos los socios para la supervisión de la directiva
+/// obtiene todos los pagos de todos los socios para la supervisión de la directiva
 pub async fn fetch_todos_los_pagos(client: &Client) -> Result<Vec<crate::models::cuota::PagoCompleto>, Error> {
     let stmt = client
         .prepare(

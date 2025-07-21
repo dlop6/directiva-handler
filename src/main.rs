@@ -18,11 +18,11 @@ use endpoints::graphql_endpoints::{create_schema, graphql_handler, graphiql};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // 1) Cargar .env y configurar logger
+    // cargar .env y configurar logger
     let _ = dotenv();
     env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
 
-    // 2) Cargar configuración
+    // cargar configuración
     let cfg = Config::init().expect("Falló al cargar la configuración");
     println!("🚀 Ambiente:     {}", cfg.environment);
     println!("🔗 Postgres URL: {}", cfg.database_url);
@@ -30,9 +30,9 @@ async fn main() -> std::io::Result<()> {
     println!("🌐 CORS Origin:  {}", cfg.cors_origin());
     println!("🚀 Server on:    http://{}", cfg.server_addr());
 
-    // 3) Crear pool de Postgres
+    // crear pool de postgres
     let mut pg_cfg = deadpool_postgres::Config::new();
-    // Para el desarrollo, configuramos manualmente
+    // para desarrollo, configuramos manualmente
     pg_cfg.user = Some("directiva_user".to_string());
     pg_cfg.password = Some("directiva_pass".to_string());
     pg_cfg.host = Some("localhost".to_string());
@@ -43,10 +43,10 @@ async fn main() -> std::io::Result<()> {
         pg_cfg.create_pool(Some(deadpool_postgres::Runtime::Tokio1), NoTls)
             .expect("No se pudo crear el pool de Postgres");
 
-    // 4) Crear schema de GraphQL con contexto
+    // crear schema de graphql
     let schema = Arc::new(create_schema(pg_client.clone()));
 
-    // 5) Arrancar servidor HTTP
+    // arrancar servidor http
     let server = HttpServer::new({
         let schema = schema.clone();
         let pg_client = pg_client.clone();
@@ -59,7 +59,7 @@ async fn main() -> std::io::Result<()> {
                 .allowed_headers(vec!["Content-Type", "Authorization"])
                 .max_age(3600);
 
-            // Crear middleware de seguridad (siempre, pero condicional internamente)
+            // middleware de seguridad solo en prod
             let security_headers = if cfg.is_production() {
                 DefaultHeaders::new()
                     .add(("X-Frame-Options", "DENY"))
@@ -67,19 +67,19 @@ async fn main() -> std::io::Result<()> {
                     .add(("X-XSS-Protection", "1; mode=block"))
                     .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
             } else {
-                DefaultHeaders::new() // Headers vacíos para desarrollo
+                DefaultHeaders::new() // headers vacíos para dev
             };
 
-            // Crear la app con el MISMO tipo siempre
+            // crear la app
             let mut app = App::new()
                 .wrap(Logger::default())
                 .wrap(cors)
-                .wrap(security_headers)  // Siempre aplicamos el middleware
+                .wrap(security_headers)
                 .app_data(web::Data::new(schema.clone()))
                 .app_data(web::Data::new(pg_client.clone()))
                 .service(web::resource("/graphql").route(web::post().to(graphql_handler)));
 
-            // Agregar GraphiQL solo en desarrollo
+            // graphiql solo en desarrollo
             if !cfg.is_production() {
                 app = app.service(web::resource("/graphiql").route(web::get().to(graphiql)));
             }

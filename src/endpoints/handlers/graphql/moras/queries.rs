@@ -7,7 +7,7 @@ pub struct MoraQuery;
 
 #[juniper::graphql_object(Context = Context)]
 impl MoraQuery {
-    // Obtener moras por nombre de usuario (ya que Mora usa nombre_usuario, no usuario_id)
+    // obtener moras por nombre de usuario (ya que Mora usa nombre_usuario, no usuario_id)
     async fn obtener_moras_por_usuario(&self, ctx: &Context, nombre_usuario: String) -> FieldResult<Mora> {
         let client = ctx.pg_client.get().await?;
         let moras = fetch_moras(&client).await?;
