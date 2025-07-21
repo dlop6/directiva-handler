@@ -1,7 +1,8 @@
 // src/repos/pg.rs
 
 use crate::models::{
-    usuarios::{User, Rol},
+    usuarios::User,
+    roles::Rol,
     prestamo::Prestamo,
     cuota::Cuota,
     moras::{Mora, CuotaMora, PrestamoCuotaMora},
@@ -11,7 +12,6 @@ use crate::models::{
     pagare::Pagare
 };
 use deadpool_postgres::Client;
-use tokio_pg_mapper::FromTokioPostgresRow;
 use tokio_pg_mapper_derive::PostgresMapper;
 use tokio_postgres::Error;
 use std::str::FromStr;
@@ -52,7 +52,10 @@ pub async fn fetch_usuarios(client: &Client) -> Result<Vec<User>, Error> {
                 total_aporte: row.get("total_aporte"),
                 roles: roles
                     .into_iter()
-                    .map(|nombre| Rol { nombre })
+                    .map(|nombre| Rol { 
+                        nombre, 
+                        tasa_interes: 0.0  // Por ahora hardcodeado, luego se puede obtener de la BD
+                    })
                     .collect(),
             }
         })
@@ -160,19 +163,24 @@ pub async fn fetch_prestamos(client: &Client) -> Result<Vec<Prestamo>, Error> {
 #[derive(PostgresMapper)]
 #[pg_mapper(table = "cuotas")]
 struct CuotaRow {
+    id: i32,
+    usuario_id: i32,
+    tipo_cuota_id: i32,
     monto_cuota: f64,
     fecha_vencimiento: String,
     monto_pagado: f64,
     multa: f64,
-    usuario_id: i32,  // Added for filtering
+    fecha_creacion: String,
 }
 
 pub async fn fetch_cuotas(client: &Client) -> Result<Vec<Cuota>, Error> {
     let stmt = client
         .prepare(
-            "SELECT c.*, tc.nombre as tipo_cuota_nombre, tc.es_extraordinaria
+            "SELECT c.id, c.usuario_id, c.tipo_cuota_id, c.monto_cuota, 
+                    c.fecha_vencimiento::text, c.monto_pagado, c.multa,
+                    c.fecha_creacion::text
              FROM cuotas c
-             INNER JOIN tipos_cuota tc ON c.tipo_cuota_id = tc.id"
+             ORDER BY c.fecha_vencimiento DESC"
         )
         .await?;
 
@@ -182,15 +190,62 @@ pub async fn fetch_cuotas(client: &Client) -> Result<Vec<Cuota>, Error> {
         .iter()
         .map(|row| {
             Cuota {
+                id: row.get("id"),
+                usuario_id: row.get("usuario_id"),
+                tipo_cuota_id: row.get("tipo_cuota_id"),
                 monto_cuota: row.get("monto_cuota"),
                 fecha_vencimiento: row.get("fecha_vencimiento"),
                 monto_pagado: row.get("monto_pagado"),
                 multa: row.get("multa"),
+                fecha_creacion: row.get("fecha_creacion"),
             }
         })
         .collect();
 
     Ok(cuotas)
+}
+
+/// Obtiene todos los pagos de todos los socios para la supervisión de la directiva
+pub async fn fetch_todos_los_pagos(client: &Client) -> Result<Vec<crate::models::cuota::PagoCompleto>, Error> {
+    let stmt = client
+        .prepare(
+            "SELECT c.id, c.usuario_id, u.nombre_completo as nombre_usuario,
+                    tc.nombre as tipo_cuota, c.monto_cuota, 
+                    c.fecha_vencimiento::text, c.monto_pagado, c.multa,
+                    c.fecha_creacion::text,
+                    CASE 
+                        WHEN c.monto_pagado >= c.monto_cuota THEN 'Pagado'
+                        WHEN c.fecha_vencimiento < CURRENT_DATE AND c.monto_pagado < c.monto_cuota THEN 'Vencido'
+                        ELSE 'Pendiente'
+                    END as estado_pago
+             FROM cuotas c
+             INNER JOIN usuarios u ON c.usuario_id = u.id_usuario
+             INNER JOIN tipos_cuota tc ON c.tipo_cuota_id = tc.id
+             ORDER BY c.fecha_vencimiento DESC, u.nombre_completo"
+        )
+        .await?;
+
+    let rows = client.query(&stmt, &[]).await?;
+    
+    let pagos = rows
+        .iter()
+        .map(|row| {
+            crate::models::cuota::PagoCompleto {
+                id: row.get("id"),
+                usuario_id: row.get("usuario_id"),
+                nombre_usuario: row.get("nombre_usuario"),
+                tipo_cuota: row.get("tipo_cuota"),
+                monto_cuota: row.get("monto_cuota"),
+                fecha_vencimiento: row.get("fecha_vencimiento"),
+                monto_pagado: row.get("monto_pagado"),
+                multa: row.get("multa"),
+                fecha_creacion: row.get("fecha_creacion"),
+                estado_pago: row.get("estado_pago"),
+            }
+        })
+        .collect();
+
+    Ok(pagos)
 }
 
 #[derive(PostgresMapper)]

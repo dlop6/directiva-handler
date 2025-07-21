@@ -47,22 +47,6 @@ services:
       redis:
         condition: service_healthy
 
-  db-maintenance:
-    build:
-      context: .
-      dockerfile: Dockerfile.maintenance
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - db_backups:/backup
-      - maintenance_logs:/var/log/db-maintenance
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
 volumes:
   postgres_data:
   redis_data:
-  db_backups:
-  maintenance_logs:

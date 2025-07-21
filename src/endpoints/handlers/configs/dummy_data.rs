@@ -42,28 +42,44 @@ pub fn get_dummy_users() -> Vec<User> {
 pub fn get_dummy_cuotas() -> Vec<Cuota> {
     vec![
         Cuota {
+            id: 1,
+            usuario_id: 1,
+            tipo_cuota_id: 1,
             monto_cuota: 100.0,
             fecha_vencimiento: "2025-10-01".to_string(),
             monto_pagado: 0.0,
             multa: 0.0,
+            fecha_creacion: "2025-07-01T00:00:00Z".to_string(),
         },
         Cuota {
+            id: 2,
+            usuario_id: 2,
+            tipo_cuota_id: 1,
             monto_cuota: 100.0,
             fecha_vencimiento: "2025-11-01".to_string(),
             monto_pagado: 100.0,
             multa: 0.0,
+            fecha_creacion: "2025-07-01T00:00:00Z".to_string(),
         },
         Cuota {
+            id: 3,
+            usuario_id: 3,
+            tipo_cuota_id: 2,
             monto_cuota: 150.0,
             fecha_vencimiento: "2025-12-01".to_string(),
             monto_pagado: 75.0,
             multa: 5.0,
+            fecha_creacion: "2025-07-01T00:00:00Z".to_string(),
         },
         Cuota {
+            id: 4,
+            usuario_id: 4,
+            tipo_cuota_id: 1,
             monto_cuota: 200.0,
             fecha_vencimiento: "2026-01-01".to_string(),
             monto_pagado: 0.0,
             multa: 10.0,
+            fecha_creacion: "2025-07-01T00:00:00Z".to_string(),
         }
     ]
 }

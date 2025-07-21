@@ -1,18 +1,56 @@
 use juniper::FieldResult;
-use crate::models::cuota::Cuota;
+use crate::models::cuota::{Cuota, PagoCompleto};
 use crate::endpoints::graphql_context::Context;
-use crate::repos::pg::fetch_cuotas;
+use crate::repos::pg::{fetch_cuotas, fetch_todos_los_pagos};
 
 pub struct PagoQuery;
 
 #[juniper::graphql_object(Context = Context)]
 impl PagoQuery {
+    /// Obtiene todos los pagos de todos los socios - Para supervisión de la directiva
+    async fn obtener_todos_los_pagos(&self, ctx: &Context) -> FieldResult<Vec<PagoCompleto>> {
+        let client = ctx.pg_client.get().await?;
+        let pagos = fetch_todos_los_pagos(&client).await?;
+        Ok(pagos)
+    }
+
+    /// Obtiene todos los pagos pendientes de todos los socios
+    async fn obtener_todos_los_pagos_pendientes(&self, ctx: &Context) -> FieldResult<Vec<PagoCompleto>> {
+        let client = ctx.pg_client.get().await?;
+        let pagos = fetch_todos_los_pagos(&client).await?;
+        Ok(pagos
+            .into_iter()
+            .filter(|p| p.estado_pago == "Pendiente" || p.estado_pago == "Vencido")
+            .collect())
+    }
+
+    /// Obtiene todos los pagos completados de todos los socios
+    async fn obtener_todos_los_pagos_completados(&self, ctx: &Context) -> FieldResult<Vec<PagoCompleto>> {
+        let client = ctx.pg_client.get().await?;
+        let pagos = fetch_todos_los_pagos(&client).await?;
+        Ok(pagos
+            .into_iter()
+            .filter(|p| p.estado_pago == "Pagado")
+            .collect())
+    }
+
+    /// Obtiene pagos por socio específico - Para revisión individual
+    async fn obtener_pagos_por_socio(&self, ctx: &Context, usuario_id: i32) -> FieldResult<Vec<PagoCompleto>> {
+        let client = ctx.pg_client.get().await?;
+        let pagos = fetch_todos_los_pagos(&client).await?;
+        Ok(pagos
+            .into_iter()
+            .filter(|p| p.usuario_id == usuario_id)
+            .collect())
+    }
+
+    // Mantener las funciones originales para compatibilidad
     async fn obtener_pagos_pendientes(&self, ctx: &Context, usuario_id: i32) -> FieldResult<Vec<Cuota>> {
         let client = ctx.pg_client.get().await?;
         let cuotas = fetch_cuotas(&client).await?;
         Ok(cuotas
             .into_iter()
-            .filter(|c| c.usuario_id == usuario_id && c.monto_pagado == 0.0)
+            .filter(|c| c.usuario_id == usuario_id && c.monto_pagado < c.monto_cuota)
             .collect())
     }
 
@@ -21,7 +59,7 @@ impl PagoQuery {
         let cuotas = fetch_cuotas(&client).await?;
         Ok(cuotas
             .into_iter()
-            .filter(|c| c.usuario_id == usuario_id && c.monto_pagado > 0.0)
+            .filter(|c| c.usuario_id == usuario_id && c.monto_pagado >= c.monto_cuota)
             .collect())
     }
 }

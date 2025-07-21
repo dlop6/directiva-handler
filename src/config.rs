@@ -5,7 +5,7 @@ use dotenv::dotenv;
 use std::net::SocketAddr;
 
 /// Configuración de la aplicación cargada desde variables de entorno.
-#[derive(Envconfig, Debug)]
+#[derive(Envconfig, Debug, Clone)]
 pub struct Config {
     /// URL de conexión a PostgreSQL, e.g. "postgres://user:pass@host:5432/dbname"
     #[envconfig(from = "DATABASE_URL")]
