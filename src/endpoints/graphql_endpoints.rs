@@ -1,72 +1,62 @@
-use crate::endpoints::handlers::graphql::{
-    directiva::queries::DirectivaQuery,
-    moras::queries::MoraQuery,
-    pagos::queries::PagoQuery,
-    prestamos::queries::PrestamoQuery,
-};
-use crate::endpoints::graphql_context::Context;
-use deadpool_postgres::Pool;
-use juniper::{EmptyMutation, EmptySubscription, RootNode};
-use actix_web::{web, HttpResponse, Result};
+use actix_web::{web, Result, HttpResponse};
+use juniper::http::{GraphQLRequest, playground::playground_source};
+use crate::configs::schema::{DirectivaContext, create_schema};
 
-/// Tipo del schema, ahora sin contexto embebido
-pub type Schema = RootNode<'static, Query, EmptyMutation<Context>, EmptySubscription<Context>>;
+// GraphQL Query Root siguiendo patrón general-handler exacto
+#[derive(Debug, Default)]
+pub struct DirectivaQueryRoot;
 
-pub struct Query;
-
-#[juniper::graphql_object(Context = Context)]
-impl Query {
-    async fn directiva(_context: &Context) -> DirectivaQuery {
-        DirectivaQuery
+#[juniper::graphql_object(Context = DirectivaContext)]
+impl DirectivaQueryRoot {
+    /// Obtener todos los préstamos
+    fn prestamos(context: &DirectivaContext) -> Vec<crate::repos::prestamo::Prestamo> {
+        context.prestamo_repo().get_all_prestamos()
     }
-
-    async fn moras(_context: &Context) -> MoraQuery {
-        MoraQuery
+    
+    /// Obtener préstamo por ID
+    fn prestamo(context: &DirectivaContext, id: String) -> Option<crate::repos::prestamo::Prestamo> {
+        context.prestamo_repo().get_prestamo_by_id(&id)
     }
-
-    async fn pagos(_context: &Context) -> PagoQuery {
-        PagoQuery
-    }
-
-    async fn prestamos(_context: &Context) -> PrestamoQuery {
-        PrestamoQuery
+    
+    /// Obtener todos los pagos
+    fn pagos(context: &DirectivaContext) -> Vec<crate::repos::prestamo::Pago> {
+        context.pago_repo().get_all_pagos()
     }
 }
 
-/// Crea el schema, inyectando el Contexto
-pub fn create_schema(_pg_pool: Pool) -> Schema {
-    Schema::new(Query {}, EmptyMutation::new(), EmptySubscription::new())
+// Mutation Root (placeholder para extensiones futuras)
+#[derive(Debug, Default)]
+pub struct DirectivaMutationRoot;
+
+#[juniper::graphql_object(Context = DirectivaContext)]
+impl DirectivaMutationRoot {
+    fn placeholder() -> bool {
+        true
+    }
 }
 
-/// Handler para las queries GraphQL
+/// Handler para queries GraphQL
 pub async fn graphql_handler(
-    schema: web::Data<Schema>,
-    data: web::Json<juniper::http::GraphQLRequest>,
-    pg_pool: web::Data<Pool>,
+    schema: web::Data<juniper::RootNode<'static, DirectivaQueryRoot, DirectivaMutationRoot, juniper::DefaultScalarValue>>,
+    data: web::Json<GraphQLRequest>,
+    context: web::Data<DirectivaContext>,
 ) -> Result<HttpResponse> {
-    let ctx = Context { pg_client: pg_pool.as_ref().clone() };
-    let res = data.execute(&schema, &ctx).await;
+    let res = data.execute(&schema, &context).await;
     Ok(HttpResponse::Ok().json(res))
 }
 
-/// Handler para GraphiQL UI
-pub async fn graphiql() -> Result<HttpResponse> {
-    let html = juniper::http::graphiql::graphiql_source("/graphql", None);
+/// Handler para GraphQL Playground UI
+pub async fn playground_handler() -> Result<HttpResponse> {
     Ok(HttpResponse::Ok()
-        .content_type("text/html; charset=utf-8")
-        .body(html))
+        .content_type("text/html")
+        .body(playground_source("/graphql", None)))
 }
 
-/// Configura las rutas y el schema en Actix
-pub fn configure(cfg: &mut web::ServiceConfig, pg_pool: Pool) {
-    let schema = std::sync::Arc::new(create_schema(pg_pool));
-    cfg.app_data(web::Data::new(schema.clone()));
-    cfg.service(
-        web::resource("/graphql")
-            .route(web::post().to(graphql_handler))
-    )
-    .service(
-        web::resource("/graphiql")
-            .route(web::get().to(graphiql))
-    );
+/// Configuración de rutas GraphQL siguiendo patrón general-handler
+pub fn config(cfg: &mut web::ServiceConfig) {
+    let schema = create_schema::<DirectivaQueryRoot, DirectivaMutationRoot>();
+    
+    cfg.app_data(web::Data::new(schema))
+        .route("/graphql", web::post().to(graphql_handler))
+        .route("/playground", web::get().to(playground_handler));
 }

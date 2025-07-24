@@ -1,95 +1,44 @@
-// src/main.rs
-
-mod config;
-mod endpoints;
-mod models;
-mod repos;
-
-use actix_web::{web, App, HttpServer, middleware::{Logger, DefaultHeaders}};
 use actix_cors::Cors;
-use config::Config;
-use deadpool_postgres::{ManagerConfig, Pool, RecyclingMethod};
-use dotenv::dotenv;
-use env_logger::Env;
+use actix_web::{web, App, HttpResponse, HttpServer, Result};
+use directiva_handler::config::Env;
+use directiva_handler::configs::{get_pool_connection, DirectivaContext};
+use directiva_handler::endpoints::handlers::{create_schema, graphql_config, rest_config};
 use std::sync::Arc;
-use tokio_postgres::NoTls;
 
-use endpoints::graphql_endpoints::{create_schema, graphql_handler, graphiql};
+async fn health() -> Result<HttpResponse> {
+    Ok(HttpResponse::Ok().json(directiva_handler::models::general::GeneralInfo {
+        api_version: "1.0.0".to_string(),
+    }))
+}
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // cargar .env y configurar logger
-    let _ = dotenv();
-    env_logger::Builder::from_env(Env::default().default_filter_or("info")).init();
+    env_logger::init();
 
-    // cargar configuración
-    let cfg = Config::init().expect("Falló al cargar la configuración");
-    println!("🚀 Ambiente:     {}", cfg.environment);
-    println!("🔗 Postgres URL: {}", cfg.database_url);
-    println!("🔗 Redis URL:    {}", cfg.redis_url);
-    println!("🌐 CORS Origin:  {}", cfg.cors_origin());
-    println!("🚀 Server on:    http://{}", cfg.server_addr());
+    let config: Env = Env::env_init();
+    println!("Server Running in: {}:{}", config.host, config.port);
 
-    // crear pool de postgres
-    let mut pg_cfg = deadpool_postgres::Config::new();
-    // para desarrollo, configuramos manualmente
-    pg_cfg.user = Some("directiva_user".to_string());
-    pg_cfg.password = Some("directiva_pass".to_string());
-    pg_cfg.host = Some("localhost".to_string());
-    pg_cfg.port = Some(5432);
-    pg_cfg.dbname = Some("directiva_db".to_string());
-    pg_cfg.manager = Some(ManagerConfig { recycling_method: RecyclingMethod::Fast });
-    let pg_client: Pool =
-        pg_cfg.create_pool(Some(deadpool_postgres::Runtime::Tokio1), NoTls)
-            .expect("No se pudo crear el pool de Postgres");
+    // Inicializar pool de conexiones Redis siguiendo patrón general-handler
+    let redis_pool = Arc::new(get_pool_connection());
+    let context = web::Data::new(DirectivaContext::new(Arc::clone(&redis_pool)));
+    let schema = web::Data::new(create_schema());
 
-    // crear schema de graphql
-    let schema = Arc::new(create_schema(pg_client.clone()));
+    HttpServer::new(move || {
+        let cors = if cfg!(debug_assertions) {
+            Cors::permissive()
+        } else {
+            Cors::permissive() // Same for both for now
+        };
 
-    // arrancar servidor http
-    let server = HttpServer::new({
-        let schema = schema.clone();
-        let pg_client = pg_client.clone();
-        let cfg = cfg.clone();
-        
-        move || {
-            let cors = Cors::default()
-                .allowed_origin(&cfg.cors_origin())
-                .allowed_methods(vec!["GET", "POST", "OPTIONS"])
-                .allowed_headers(vec!["Content-Type", "Authorization"])
-                .max_age(3600);
-
-            // middleware de seguridad solo en prod
-            let security_headers = if cfg.is_production() {
-                DefaultHeaders::new()
-                    .add(("X-Frame-Options", "DENY"))
-                    .add(("X-Content-Type-Options", "nosniff"))
-                    .add(("X-XSS-Protection", "1; mode=block"))
-                    .add(("Strict-Transport-Security", "max-age=31536000; includeSubDomains"))
-            } else {
-                DefaultHeaders::new() // headers vacíos para dev
-            };
-
-            // crear la app
-            let mut app = App::new()
-                .wrap(Logger::default())
-                .wrap(cors)
-                .wrap(security_headers)
-                .app_data(web::Data::new(schema.clone()))
-                .app_data(web::Data::new(pg_client.clone()))
-                .service(web::resource("/graphql").route(web::post().to(graphql_handler)));
-
-            // graphiql solo en desarrollo
-            if !cfg.is_production() {
-                app = app.service(web::resource("/graphiql").route(web::get().to(graphiql)));
-            }
-
-            app
-        }
-    });
-
-    server
-        .bind(cfg.server_addr())?
-        .run()
-        .await
+        App::new()
+            .wrap(cors)
+            .app_data(context.clone())
+            .app_data(schema.clone())
+            .route("/health", web::get().to(health))
+            .configure(rest_config)
+            .configure(graphql_config)
+    })
+    .bind(format!("{}:{}", config.host, config.port))?
+    .run()
+    .await
 }
